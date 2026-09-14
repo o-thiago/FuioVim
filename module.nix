@@ -4,7 +4,6 @@ inputs:
   wlib,
   lib,
   pkgs,
-  options,
   ...
 }:
 {
@@ -27,9 +26,7 @@ inputs:
     binName = "fuiovim";
     runtimePkgs = config.specCollect (acc: v: acc ++ (v.runtimePkgs or [ ])) [ ];
 
-    hosts = {
-      neovide.nvim-host.enable = config.settings.neovide.enable;
-    };
+    hosts.neovide.nvim-host.enable = config.settings.neovide.enable;
 
     settings = {
       config_directory = ./config;
@@ -40,21 +37,12 @@ inputs:
     };
 
     specMods =
+      { ... }:
       {
-        parentSpec ? null,
-        parentOpts ? null,
-        parentName ? null,
-        config,
-        options,
-        ...
-      }:
-      {
-        options = {
-          runtimePkgs = lib.mkOption {
-            default = [ ];
-            type = lib.types.listOf lib.types.package;
-            description = "Pacotes de tempo de execução (LSPs, formatadores, linters) injetados no PATH quando a especificação está ativa.";
-          };
+        options.runtimePkgs = lib.mkOption {
+          default = [ ];
+          type = lib.types.listOf lib.types.package;
+          description = "Pacotes de tempo de execução (LSPs, formatadores, linters) injetados no PATH quando a especificação está ativa.";
         };
       };
 

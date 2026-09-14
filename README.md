@@ -24,13 +24,20 @@ Você pode usar o FuioVim em qualquer distribuição Linux (Ubuntu, Debian, Fedo
 
 ### 1. Instalar o Nix
 
-Recomenda-se o instalador da Determinate Systems:
+Utilize o instalador oficial multi-usuário do Nix:
 
 ```bash
-curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install
+sh <(curl -L https://nixos.org/nix/install) --daemon
 ```
 
-Após a conclusão, reinicie o terminal para que o Nix seja carregado no `$PATH`.
+Habilite o suporte a Flakes adicionando as flags experimentais em `~/.config/nix/nix.conf`:
+
+```bash
+mkdir -p ~/.config/nix
+echo "experimental-features = nix-command flakes" >> ~/.config/nix/nix.conf
+```
+
+Reinicie o terminal (ou encerre e inicie a sessão) para carregar o Nix no `$PATH`.
 
 ### 2. Instalar o FuioVim
 
