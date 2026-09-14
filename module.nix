@@ -204,8 +204,6 @@ inputs:
         data = null;
         enable = lib.mkDefault false;
         runtimePkgs = with pkgs; [
-          nodejs
-          typescript
           typescript-language-server
           svelte-language-server
           tailwindcss-language-server
