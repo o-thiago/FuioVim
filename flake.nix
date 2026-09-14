@@ -39,6 +39,8 @@
           fuiovimPkg = self.wrappers.fuiovim.wrap { pkgs = pkgsUnfree; };
         in
         {
+          formatter = pkgs.nixfmt-tree;
+
           packages = {
             default = fuiovimPkg;
             fuiovim = fuiovimPkg;
@@ -72,26 +74,24 @@
               pkgs.stylua
             ];
           };
-
-          formatter = pkgs.nixfmt-tree;
         };
 
       flake = {
         wrapperModules = {
+          default = self.wrapperModules.fuiovim;
           fuiovim = module;
           neovim = module;
-          default = self.wrapperModules.fuiovim;
         };
 
         wrappers = {
+          default = self.wrappers.fuiovim;
           fuiovim = wrapper.config;
           neovim = wrapper.config;
-          default = self.wrappers.fuiovim;
         };
 
         overlays = {
-          fuiovim = final: prev: { fuiovim = self.wrappers.fuiovim.wrap { pkgs = final; }; };
           default = self.overlays.fuiovim;
+          fuiovim = final: prev: { fuiovim = self.wrappers.fuiovim.wrap { pkgs = final; }; };
         };
 
         nixosModules = {

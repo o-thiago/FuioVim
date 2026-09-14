@@ -4,12 +4,14 @@ local visit_keys = {
 		function()
 			require("mini.visits").add_path()
 		end,
+		desc = "Add visit path",
 	},
 	{
 		"<leader>h",
 		function()
 			require("mini.visits").select_path()
 		end,
+		desc = "Select visit path",
 	},
 }
 
@@ -22,18 +24,21 @@ for i = 1, 5, 1 do
 				vim.cmd("edit " .. paths[i])
 			end
 		end,
+		desc = "Visit path " .. i,
 	})
 end
 
 return {
 	{
 		"mini.pairs",
+		event = "InsertEnter",
 		after = function()
 			require("mini.pairs").setup()
 		end,
 	},
 	{
 		"mini.icons",
+		event = "DeferredUIEnter",
 		dep_of = { "oil.nvim", "render-markdown.nvim" },
 		after = function()
 			require("mini.icons").setup()

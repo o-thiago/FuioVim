@@ -10,242 +10,221 @@ inputs:
 {
   imports = [ wlib.wrapperModules.neovim ];
 
-  # Binary name & command aliases
-  config.binName = "fuiovim";
-  config.settings.aliases = [
-    "fvim"
-    "nvim"
-  ];
+  options = {
+    settings = {
+      neovide.enable = lib.mkEnableOption "Neovide GUI wrapper";
 
-  # Neovim configuration directory
-  config.settings.config_directory = ./config;
-
-  # Submodule enhancements: attach runtimePkgs to specs so they are only included when the spec is enabled
-  config.specMods =
-    {
-      parentSpec ? null,
-      parentOpts ? null,
-      parentName ? null,
-      config,
-      options,
-      ...
-    }:
-    {
-      options.runtimePkgs = lib.mkOption {
-        type = lib.types.listOf lib.types.package;
-        default = [ ];
-        description = ''
-          Runtime packages (LSPs, linters, formatters, tools) to put on PATH.
-          If this spec is disabled (enable = false), these packages will not be included.
-        '';
+      cats = lib.mkOption {
+        readOnly = true;
+        type = lib.types.attrsOf lib.types.bool;
+        default = builtins.mapAttrs (_: v: v.enable) config.specs;
+        description = "Exposes enabled spec categories to Lua (accessible via require('nix-info').settings.cats)";
       };
     };
-
-  # Collect runtimePkgs from all enabled specs
-  config.runtimePkgs = config.specCollect (acc: v: acc ++ (v.runtimePkgs or [ ])) [ ];
-
-  # Inform Lua of which top-level specs are enabled (similar to nixCats categories)
-  options.settings.cats = lib.mkOption {
-    readOnly = true;
-    type = lib.types.attrsOf lib.types.bool;
-    default = builtins.mapAttrs (_: v: v.enable) config.specs;
-    description = "Exposes enabled spec categories to Lua (accessible via require('nix-info').settings.cats)";
   };
 
-  # Optional Neovide GUI wrapper
-  options.settings.neovide.enable = lib.mkEnableOption "Neovide GUI wrapper";
-  config.hosts.neovide.nvim-host.enable = config.settings.neovide.enable;
+  config = {
+    binName = "fuiovim";
+    runtimePkgs = config.specCollect (acc: v: acc ++ (v.runtimePkgs or [ ])) [ ];
 
-  # =========================================================================
-  # Modular, opinionated specs (Opt-in / Opt-out)
-  # Downstream users can toggle any category with `specs.<name>.enable = false;`
-  # or add their own specs with `specs.<name> = ...;`
-  # =========================================================================
+    settings = {
+      config_directory = ./config;
+      aliases = [
+        "fvim"
+        "nvim"
+      ];
+    };
 
-  # Core editor experience & visual identity
-  config.specs.core = {
-    lazy = false;
-    data = with pkgs.vimPlugins; [
-      lze
-      rose-pine
-      mini-pairs
-      mini-icons
-      mini-visits
-      oil-nvim
-      snacks-nvim
-      cord-nvim
-    ];
-    runtimePkgs = with pkgs; [
-      ripgrep
-      lazygit
-      tree-sitter
-    ];
-  };
+    hosts.neovide.nvim-host.enable = config.settings.neovide.enable;
 
-  # Autocompletion engine
-  config.specs.completion = {
-    lazy = true;
-    data = with pkgs.vimPlugins; [
-      blink-cmp
-      friendly-snippets
-    ];
-  };
+    specMods =
+      {
+        parentSpec ? null,
+        parentOpts ? null,
+        parentName ? null,
+        config,
+        options,
+        ...
+      }:
+      {
+        options.runtimePkgs = lib.mkOption {
+          default = [ ];
+          type = lib.types.listOf lib.types.package;
+          description = ''
+            Runtime packages (LSPs, linters, formatters, tools) to put on PATH.
+            If this spec is disabled (enable = false), these packages will not be included.
+          '';
+        };
+      };
 
-  # Syntax highlighting via precompiled Tree-sitter grammars
-  config.specs.treesitter = {
-    lazy = true;
-    data = with pkgs.vimPlugins; [
-      nvim-treesitter.withAllGrammars
-    ];
-  };
+    specs = {
+      core = {
+        lazy = false;
+        data = with pkgs.vimPlugins; [
+          lze
+          rose-pine
+          mini-pairs
+          mini-icons
+          mini-visits
+          oil-nvim
+          snacks-nvim
+          cord-nvim
+        ];
+        runtimePkgs = with pkgs; [
+          ripgrep
+          lazygit
+          tree-sitter
+          figlet
+        ];
+      };
 
-  # Native LSP client
-  config.specs.lsp = {
-    lazy = true;
-    data = with pkgs.vimPlugins; [
-      nvim-lspconfig
-    ];
-  };
+      completion = {
+        lazy = true;
+        data = with pkgs.vimPlugins; [
+          blink-cmp
+          friendly-snippets
+        ];
+      };
 
-  # Formatting engine
-  config.specs.formatting = {
-    lazy = true;
-    data = with pkgs.vimPlugins; [
-      conform-nvim
-    ];
-  };
+      treesitter = {
+        lazy = true;
+        data = with pkgs.vimPlugins; [
+          nvim-treesitter.withAllGrammars
+        ];
+      };
 
-  # Linting engine
-  config.specs.linting = {
-    lazy = true;
-    data = with pkgs.vimPlugins; [
-      nvim-lint
-    ];
-  };
+      lsp = {
+        lazy = true;
+        data = with pkgs.vimPlugins; [
+          nvim-lspconfig
+        ];
+      };
 
-  # Markdown rendering in terminal
-  config.specs.markdown = {
-    lazy = true;
-    data = with pkgs.vimPlugins; [
-      render-markdown-nvim
-    ];
-  };
+      formatting = {
+        lazy = true;
+        data = with pkgs.vimPlugins; [
+          conform-nvim
+        ];
+      };
 
-  # --- Language Toolchains (LSPs, Formatters, Linters) ---
+      linting = {
+        lazy = true;
+        data = with pkgs.vimPlugins; [
+          nvim-lint
+        ];
+      };
 
-  # Nix language
-  config.specs.nix = {
-    data = null;
-    runtimePkgs = with pkgs; [
-      nixd
-      statix
-      nixfmt
-    ];
-  };
+      markdown = {
+        lazy = true;
+        data = with pkgs.vimPlugins; [
+          render-markdown-nvim
+        ];
+      };
 
-  # Lua language
-  config.specs.lua = {
-    data = null;
-    runtimePkgs = with pkgs; [
-      lua-language-server
-      stylua
-    ];
-  };
+      nix = {
+        data = null;
+        runtimePkgs = with pkgs; [
+          nixd
+          statix
+          nixfmt
+        ];
+      };
 
-  # Rust language
-  config.specs.rust = {
-    lazy = true;
-    data = with pkgs.vimPlugins; [
-      rustaceanvim
-    ];
-    runtimePkgs = with pkgs; [
-      rust-analyzer
-      clippy
-      rustfmt
-    ];
-  };
+      lua = {
+        data = null;
+        runtimePkgs = with pkgs; [
+          lua-language-server
+          stylua
+        ];
+      };
 
-  # LaTeX support with Zathura viewer
-  config.specs.tex = {
-    lazy = true;
-    data = with pkgs.vimPlugins; [
-      vimtex
-    ];
-    runtimePkgs = with pkgs; [
-      texliveFull
-      texlab
-      zathura
-    ];
-  };
+      rust = {
+        lazy = true;
+        data = with pkgs.vimPlugins; [
+          rustaceanvim
+        ];
+        runtimePkgs = with pkgs; [
+          rust-analyzer
+          clippy
+          rustfmt
+        ];
+      };
 
-  # Python language
-  config.specs.python = {
-    data = null;
-    runtimePkgs = with pkgs; [
-      pyright
-      ruff
-    ];
-  };
+      tex = {
+        lazy = true;
+        data = with pkgs.vimPlugins; [
+          vimtex
+        ];
+        runtimePkgs = with pkgs; [
+          texliveFull
+          texlab
+          zathura
+        ];
+      };
 
-  # C / C++
-  config.specs.c_cpp = {
-    data = null;
-    runtimePkgs = with pkgs; [
-      llvmPackages.clang-tools
-      cppcheck
-    ];
-  };
+      python = {
+        data = null;
+        runtimePkgs = with pkgs; [
+          pyright
+          ruff
+        ];
+      };
 
-  # C# (.NET)
-  config.specs.csharp = {
-    data = null;
-    runtimePkgs = with pkgs; [
-      omnisharp-roslyn
-      csharpier
-    ];
-  };
+      c_cpp = {
+        data = null;
+        runtimePkgs = with pkgs; [
+          llvmPackages.clang-tools
+          cppcheck
+        ];
+      };
 
-  # PHP language
-  config.specs.php = {
-    data = null;
-    runtimePkgs = with pkgs; [
-      intelephense
-      phpactor
-      phpstan
-      phpPackages.php-cs-fixer
-    ];
-  };
+      csharp = {
+        data = null;
+        runtimePkgs = with pkgs; [
+          omnisharp-roslyn
+          csharpier
+        ];
+      };
 
-  # Web development (JS, TS, HTML, CSS, Svelte, Tailwind)
-  config.specs.web = {
-    data = null;
-    runtimePkgs = with pkgs; [
-      nodejs
-      typescript
-      typescript-language-server
-      svelte-language-server
-      tailwindcss-language-server
-      vscode-langservers-extracted
-      biome
-    ];
-  };
+      php = {
+        data = null;
+        runtimePkgs = with pkgs; [
+          intelephense
+          phpactor
+          phpstan
+          phpPackages.php-cs-fixer
+        ];
+      };
 
-  # Bash / Shell scripting
-  config.specs.bash = {
-    data = null;
-    runtimePkgs = with pkgs; [
-      bash-language-server
-      shfmt
-      shellcheck
-    ];
-  };
+      web = {
+        data = null;
+        runtimePkgs = with pkgs; [
+          nodejs
+          typescript
+          typescript-language-server
+          svelte-language-server
+          tailwindcss-language-server
+          vscode-langservers-extracted
+          biome
+        ];
+      };
 
-  # YAML language
-  config.specs.yaml = {
-    data = null;
-    runtimePkgs = with pkgs; [
-      yaml-language-server
-      yamllint
-    ];
+      bash = {
+        data = null;
+        runtimePkgs = with pkgs; [
+          bash-language-server
+          shfmt
+          shellcheck
+        ];
+      };
+
+      yaml = {
+        data = null;
+        runtimePkgs = with pkgs; [
+          yaml-language-server
+          yamllint
+        ];
+      };
+    };
   };
 }

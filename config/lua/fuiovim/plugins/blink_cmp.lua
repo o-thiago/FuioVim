@@ -5,6 +5,7 @@ return {
 	},
 	{
 		"blink.cmp",
+		event = { "InsertEnter", "CmdlineEnter" },
 		dep_of = { "nvim-lspconfig" },
 		after = function()
 			vim.keymap.set("i", "<C-Space>", function()

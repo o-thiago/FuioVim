@@ -1,6 +1,6 @@
 return {
 	"cord.nvim",
-	lazy = false,
+	event = "DeferredUIEnter",
 	after = function()
 		require("cord").setup()
 	end,

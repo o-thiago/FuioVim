@@ -1,10 +1,11 @@
 return {
 	"oil.nvim",
-	lazy = false,
+	cmd = { "Oil" },
 	keys = {
 		{
 			"<Leader>pv",
 			"<CMD>Oil<CR>",
+			desc = "Open Oil file manager",
 		},
 	},
 	after = function()

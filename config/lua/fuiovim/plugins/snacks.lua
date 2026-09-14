@@ -49,16 +49,19 @@ return {
 			notifier = { enabled = true },
 			dashboard = {
 				enabled = true,
+				sections = {
+					{
+						section = "terminal",
+						cmd = "figlet -f slant 'FuioVim' && echo '      Editor Soberano Brasileiro • Nix-Powered'",
+						height = 8,
+						padding = 1,
+						ttl = 5 * 60,
+						indent = 2,
+					},
+					{ section = "keys", gap = 1, padding = 1 },
+					{ section = "startup" },
+				},
 				preset = {
-					header = [[
- ███████╗██╗   ██╗██╗ ██████╗ ██╗   ██╗██╗███╗   ███╗
- ██╔════╝██║   ██║██║██╔═══██╗██║   ██║██║████╗ ████║
- █████╗  ██║   ██║██║██║   ██║██║   ██║██║██╔████╔██║
- ██╔══╝  ██║   ██║██║██║   ██║╚██╗ ██╔╝██║██║╚██╔╝██║
- ██║     ╚██████╔╝██║╚██████╔╝ ╚████╔╝ ██║██║ ╚═╝ ██║
- ╚═╝      ╚═════╝ ╚═╝ ╚═════╝   ╚═══╝  ╚═╝╚═╝     ╚═╝
-
-       Editor Soberano Brasileiro • Nix-Powered]],
 					keys = {
 						{ icon = " ", key = "f", desc = "Buscar Arquivos", action = ":lua Snacks.dashboard.pick('files')" },
 						{ icon = " ", key = "n", desc = "Novo Arquivo", action = ":ene | startinsert" },
