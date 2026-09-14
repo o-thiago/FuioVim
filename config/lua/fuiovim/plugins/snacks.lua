@@ -90,6 +90,38 @@ return {
 			opts.animate = { enabled = true }
 		end
 
+		local count = 0
+		local has_info, nix_info = pcall(require, "nix-info")
+		if has_info then
+			local lazy_pkgs = nix_info(nil, "plugins", "lazy") or {}
+			local start_pkgs = nix_info(nil, "plugins", "start") or {}
+			for _ in pairs(lazy_pkgs) do
+				count = count + 1
+			end
+			for k in pairs(start_pkgs) do
+				if k ~= "COLLATED_TS_GRAMMARS" then
+					count = count + 1
+				end
+			end
+		end
+
+		s().dashboard.sections.startup = function(item)
+			local icon = (item and item.icon) or "⚡ "
+			local text = {
+				{ icon .. "FuioVim pronto • ", hl = "footer" },
+			}
+			if count > 0 then
+				table.insert(text, { tostring(count), hl = "special" })
+				table.insert(text, { " plugins gerenciados via Nix", hl = "footer" })
+			else
+				table.insert(text, { "Nix-Powered", hl = "special" })
+			end
+			return {
+				align = "center",
+				text = text,
+			}
+		end
+
 		s().setup(opts)
 		vim.api.nvim_create_autocmd("LspProgress", {
 			desc = "Notificação de progresso do LSP",
