@@ -39,32 +39,32 @@
             inherit system;
             config.allowUnfree = true;
           };
-          fuiovimPkg = self.wrappers.fuiovim.wrap { pkgs = pkgsUnfree; };
+          fuiovim-pkg = self.wrappers.fuiovim.wrap { pkgs = pkgsUnfree; };
         in
         {
           formatter = pkgs.nixfmt-tree;
 
           packages = {
-            default = fuiovimPkg;
-            fuiovim = fuiovimPkg;
+            default = fuiovim-pkg;
+            fuiovim = fuiovim-pkg;
           };
 
           apps = {
             default = {
               type = "app";
-              program = lib.getExe fuiovimPkg;
+              program = lib.getExe fuiovim-pkg;
             };
             fuiovim = {
               type = "app";
-              program = lib.getExe fuiovimPkg;
+              program = lib.getExe fuiovim-pkg;
             };
             nvim = {
               type = "app";
-              program = lib.getExe' fuiovimPkg "nvim";
+              program = lib.getExe' fuiovim-pkg "nvim";
             };
             fvim = {
               type = "app";
-              program = lib.getExe' fuiovimPkg "fvim";
+              program = lib.getExe' fuiovim-pkg "fvim";
             };
           };
 
