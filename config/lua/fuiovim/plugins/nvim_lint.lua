@@ -1,4 +1,4 @@
-local cat = require("fuiovim.util").cat
+local has_spec = require("fuiovim.util").has_spec
 
 return {
 	"nvim-lint",
@@ -9,33 +9,34 @@ return {
 		lint.linters.cppcheck.args = vim.list_extend({ "--check-level=exhaustive" }, lint.linters.cppcheck.args)
 
 		local linters = {}
-		if cat("rust") then
+		if has_spec("rust") then
 			linters.rust = { "clippy" }
 		end
-		if cat("c_cpp") then
+		if has_spec("c_cpp") then
 			linters.c = { "clangtidy", "cppcheck" }
 			linters.cpp = { "clangtidy", "cppcheck" }
 		end
-		if cat("python") then
+		if has_spec("python") then
 			linters.python = { "ruff" }
 		end
-		if cat("php") then
+		if has_spec("php") then
 			linters.php = { "phpstan" }
 		end
-		if cat("yaml") then
+		if has_spec("yaml") then
 			linters.yaml = { "yamllint" }
 		end
-		if cat("bash") then
+		if has_spec("bash") then
 			linters.sh = { "shellcheck" }
 			linters.bash = { "shellcheck" }
 		end
-		if cat("nix") then
+		if has_spec("nix") then
 			linters.nix = { "statix" }
 		end
 
 		lint.linters_by_ft = linters
 
 		vim.api.nvim_create_autocmd({ "BufWritePost" }, {
+			desc = "Executar linters ao salvar buffer",
 			callback = function()
 				require("lint").try_lint()
 			end,

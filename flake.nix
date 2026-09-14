@@ -1,12 +1,15 @@
 {
-  description = "FuioVim - Sovereign Brazilian Code Editor based on Neovim and Nix";
+  description = "FuioVim - Editor de código baseado em Neovim e empacotado via Nix";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    wrappers.url = "github:nix-community/nix-wrapper-modules";
-    wrappers.inputs.nixpkgs.follows = "nixpkgs";
     flake-parts.url = "github:hercules-ci/flake-parts";
     systems.url = "github:nix-systems/default";
+
+    wrappers = {
+      url = "github:nix-community/nix-wrapper-modules";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
@@ -65,14 +68,16 @@
             };
           };
 
-          devShells.default = pkgs.mkShell {
-            packages = [
-              pkgs.nil
-              pkgs.nixd
-              pkgs.nixfmt-tree
-              pkgs.lua-language-server
-              pkgs.stylua
-            ];
+          devShells = {
+            default = pkgs.mkShell {
+              packages = [
+                pkgs.nil
+                pkgs.nixd
+                pkgs.nixfmt-tree
+                pkgs.lua-language-server
+                pkgs.stylua
+              ];
+            };
           };
         };
 

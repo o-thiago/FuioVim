@@ -1,20 +1,20 @@
-local cat = require("fuiovim.util").cat
+local has_spec = require("fuiovim.util").has_spec
 
 local plugins = {}
 
-if cat("completion") then
+if has_spec("completion") then
 	table.insert(plugins, { import = "fuiovim.plugins.blink_cmp" })
 end
 
-if cat("lsp") then
+if has_spec("lsp") then
 	table.insert(plugins, { import = "fuiovim.plugins.lsp" })
 end
 
-if cat("formatting") then
+if has_spec("formatting") then
 	table.insert(plugins, { import = "fuiovim.plugins.conform" })
 end
 
-if cat("core") then
+if has_spec("core") then
 	table.insert(plugins, { import = "fuiovim.plugins.cord" })
 	table.insert(plugins, { import = "fuiovim.plugins.oil" })
 	table.insert(plugins, { import = "fuiovim.plugins.snacks" })
@@ -25,19 +25,19 @@ if cat("core") then
 	})
 end
 
-if cat("linting") then
+if has_spec("linting") then
 	table.insert(plugins, { import = "fuiovim.plugins.nvim_lint" })
 end
 
-if cat("markdown") then
+if has_spec("markdown") then
 	table.insert(plugins, { import = "fuiovim.plugins.markdown" })
 end
 
-if cat("treesitter") then
+if has_spec("treesitter") then
 	table.insert(plugins, { import = "fuiovim.plugins.treesitter" })
 end
 
-if cat("tex") then
+if has_spec("tex") then
 	table.insert(plugins, { import = "fuiovim.plugins.vimtex" })
 end
 

@@ -12,28 +12,28 @@ return {
 			function()
 				s().lazygit()
 			end,
-			desc = "LazyGit",
+			desc = "Abrir LazyGit",
 		},
 		{
 			"<leader>pf",
 			function()
 				s().picker.files()
 			end,
-			desc = "Find Files",
+			desc = "Localizar arquivos",
 		},
 		{
 			"<leader>ps",
 			function()
 				s().picker.grep()
 			end,
-			desc = "Grep",
+			desc = "Buscar texto (grep)",
 		},
 		{
 			"<leader>pw",
 			function()
 				s().picker.grep_word()
 			end,
-			desc = "Grep Word",
+			desc = "Buscar palavra sob o cursor",
 		},
 	},
 	after = function()
@@ -92,11 +92,12 @@ return {
 
 		s().setup(opts)
 		vim.api.nvim_create_autocmd("LspProgress", {
+			desc = "Notificação de progresso do LSP",
 			callback = function(ev)
 				local spinner = { "⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏" }
 				vim.notify(vim.lsp.status(), "info", {
 					id = "lsp_progress",
-					title = "LSP Progress",
+					title = "Progresso do LSP",
 					opts = function(notif)
 						notif.icon = ev.data.params.value.kind == "end" and " "
 							or spinner[math.floor(vim.uv.hrtime() / (1e6 * 80)) % #spinner + 1]

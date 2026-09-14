@@ -12,13 +12,13 @@ inputs:
 
   options = {
     settings = {
-      neovide.enable = lib.mkEnableOption "Neovide GUI wrapper";
+      neovide.enable = lib.mkEnableOption "Invólucro gráfico para o Neovide";
 
-      cats = lib.mkOption {
+      specs = lib.mkOption {
         readOnly = true;
         type = lib.types.attrsOf lib.types.bool;
         default = builtins.mapAttrs (_: v: v.enable) config.specs;
-        description = "Exposes enabled spec categories to Lua (accessible via require('nix-info').settings.cats)";
+        description = "Mapa de especificações ativas exposto para o runtime Lua através do nix-info";
       };
     };
   };
@@ -27,6 +27,10 @@ inputs:
     binName = "fuiovim";
     runtimePkgs = config.specCollect (acc: v: acc ++ (v.runtimePkgs or [ ])) [ ];
 
+    hosts = {
+      neovide.nvim-host.enable = config.settings.neovide.enable;
+    };
+
     settings = {
       config_directory = ./config;
       aliases = [
@@ -34,8 +38,6 @@ inputs:
         "nvim"
       ];
     };
-
-    hosts.neovide.nvim-host.enable = config.settings.neovide.enable;
 
     specMods =
       {
@@ -47,19 +49,19 @@ inputs:
         ...
       }:
       {
-        options.runtimePkgs = lib.mkOption {
-          default = [ ];
-          type = lib.types.listOf lib.types.package;
-          description = ''
-            Runtime packages (LSPs, linters, formatters, tools) to put on PATH.
-            If this spec is disabled (enable = false), these packages will not be included.
-          '';
+        options = {
+          runtimePkgs = lib.mkOption {
+            default = [ ];
+            type = lib.types.listOf lib.types.package;
+            description = "Pacotes de tempo de execução (LSPs, formatadores, linters) injetados no PATH quando a especificação está ativa.";
+          };
         };
       };
 
     specs = {
       core = {
         lazy = false;
+        enable = lib.mkDefault true;
         data = with pkgs.vimPlugins; [
           lze
           rose-pine
@@ -80,6 +82,7 @@ inputs:
 
       completion = {
         lazy = true;
+        enable = lib.mkDefault true;
         data = with pkgs.vimPlugins; [
           blink-cmp
           friendly-snippets
@@ -88,6 +91,7 @@ inputs:
 
       treesitter = {
         lazy = true;
+        enable = lib.mkDefault true;
         data = with pkgs.vimPlugins; [
           nvim-treesitter.withAllGrammars
         ];
@@ -95,6 +99,7 @@ inputs:
 
       lsp = {
         lazy = true;
+        enable = lib.mkDefault true;
         data = with pkgs.vimPlugins; [
           nvim-lspconfig
         ];
@@ -102,6 +107,7 @@ inputs:
 
       formatting = {
         lazy = true;
+        enable = lib.mkDefault true;
         data = with pkgs.vimPlugins; [
           conform-nvim
         ];
@@ -109,6 +115,7 @@ inputs:
 
       linting = {
         lazy = true;
+        enable = lib.mkDefault true;
         data = with pkgs.vimPlugins; [
           nvim-lint
         ];
@@ -116,6 +123,7 @@ inputs:
 
       markdown = {
         lazy = true;
+        enable = lib.mkDefault true;
         data = with pkgs.vimPlugins; [
           render-markdown-nvim
         ];
@@ -123,6 +131,7 @@ inputs:
 
       nix = {
         data = null;
+        enable = lib.mkDefault true;
         runtimePkgs = with pkgs; [
           nixd
           statix
@@ -132,6 +141,7 @@ inputs:
 
       lua = {
         data = null;
+        enable = lib.mkDefault true;
         runtimePkgs = with pkgs; [
           lua-language-server
           stylua
@@ -140,6 +150,7 @@ inputs:
 
       rust = {
         lazy = true;
+        enable = lib.mkDefault false;
         data = with pkgs.vimPlugins; [
           rustaceanvim
         ];
@@ -152,6 +163,7 @@ inputs:
 
       tex = {
         lazy = true;
+        enable = lib.mkDefault false;
         data = with pkgs.vimPlugins; [
           vimtex
         ];
@@ -164,6 +176,7 @@ inputs:
 
       python = {
         data = null;
+        enable = lib.mkDefault false;
         runtimePkgs = with pkgs; [
           pyright
           ruff
@@ -172,6 +185,7 @@ inputs:
 
       c_cpp = {
         data = null;
+        enable = lib.mkDefault false;
         runtimePkgs = with pkgs; [
           llvmPackages.clang-tools
           cppcheck
@@ -180,6 +194,7 @@ inputs:
 
       csharp = {
         data = null;
+        enable = lib.mkDefault false;
         runtimePkgs = with pkgs; [
           omnisharp-roslyn
           csharpier
@@ -188,6 +203,7 @@ inputs:
 
       php = {
         data = null;
+        enable = lib.mkDefault false;
         runtimePkgs = with pkgs; [
           intelephense
           phpactor
@@ -198,6 +214,7 @@ inputs:
 
       web = {
         data = null;
+        enable = lib.mkDefault false;
         runtimePkgs = with pkgs; [
           nodejs
           typescript
@@ -211,6 +228,7 @@ inputs:
 
       bash = {
         data = null;
+        enable = lib.mkDefault false;
         runtimePkgs = with pkgs; [
           bash-language-server
           shfmt
@@ -220,6 +238,7 @@ inputs:
 
       yaml = {
         data = null;
+        enable = lib.mkDefault false;
         runtimePkgs = with pkgs; [
           yaml-language-server
           yamllint

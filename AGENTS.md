@@ -1,23 +1,23 @@
-# AGENTS.md - FuioVim Project Guidelines
+# AGENTS.md - Diretrizes do Projeto FuioVim
 
-## Project Overview
+## Visão Geral do Projeto
 
-**FuioVim** is a sovereign Brazilian code editor based on Neovim, hermetically packaged and configured using [nix-wrapper-modules](https://nix-community.github.io/nix-wrapper-modules/wrapperModules/neovim.html).
+**FuioVim** é um editor de código baseado em Neovim, empacotado e configurado hermeticamente utilizando [nix-wrapper-modules](https://nix-community.github.io/nix-wrapper-modules/wrapperModules/neovim.html).
 
-Key architectural principles:
-- **Declarative & Reproducible**: Fully reproducible Nix flake wrapping Neovim, its runtime plugins, language servers, formatters, and linters without imperative package managers (e.g. Mason, pip, npm).
-- **Modular Opt-In / Opt-Out (`specs`)**: Downstream consumers can selectively enable or disable individual language stacks and toolchains via `specs.<category>.enable = false;` (similar to nixCats categories). Disabling a category automatically strips out both plugins and corresponding runtime tools from PATH.
-- **Dynamic Lua Gating**: Categories enabled in Nix are exposed to Lua via `require('nix-info').settings.cats` and accessed cleanly through `require("fuiovim.util").cat`.
+Princípios arquiteturais fundamentais:
+- **Declarativo e Reprodutível**: Flake Nix totalmente reproduzível encapsulando o Neovim, seus plugins de tempo de execução, servidores de linguagem (LSPs), formatadores e linters sem depender de gerenciadores de pacotes imperativos (ex.: Mason, pip, npm).
+- **Especificações Modulares Opt-In (`specs`)**: A base do editor inclui apenas o essencial por padrão. Ferramentas e linguagens específicas (Rust, Python, Web, C/C++, TeX, C#, PHP, Bash, YAML) são desabilitadas por padrão (`enable = lib.mkDefault false;`) para manter o ambiente enxuto. Usuários e configurações downstream ativam explicitamente o que precisam (`specs.<nome>.enable = true;`), o que adiciona simultaneamente os plugins Neovim e os binários ao `$PATH`.
+- **Inspeção Dinâmica em Lua**: O estado das especificações ativas é exposto pelo módulo `nix-info` e consumido em Lua de forma centralizada através de `require("fuiovim.util").has_spec(nome)`.
 
 ---
 
-## Code Style & Formatting Standards
+## Padrões de Código e Formatação
 
-### 1. Attribute Nesting Over Dotted Syntax
-Prefer nested attribute sets whenever defining more than a single nested attribute under the same prefix. Do not repeat dotted prefixes consecutively.
+### 1. Aninhamento de Atributos sobre Sintaxe Ponto
+Prefira conjuntos de atributos aninhados sempre que houver mais de um atributo sob o mesmo prefixo. Evite repetir prefixos pontuados consecutivamente.
 
 ```nix
-# Preferred:
+# Recomendado:
 config = {
   binName = "fuiovim";
 
@@ -27,46 +27,49 @@ config = {
   };
 };
 
-# Avoid:
+# Evitar:
 config.binName = "fuiovim";
 config.settings.config_directory = ./config;
 config.settings.aliases = [ "fvim" "nvim" ];
 ```
 
-### 2. Statement Ordering
-- Place shorter, scalar, and simpler definitions first.
-- Place multi-line attribute sets, nested blocks, and complex functions at the end of the enclosing block.
+### 2. Ordenação de Declarações
+- Posicione definições mais curtas, escalares e simples no início do bloco.
+- Posicione blocos aninhados, conjuntos multilinha e funções complexas no final do bloco envolvente.
 
-### 3. Binary Resolution via `lib.getExe`
-Never hardcode derivation output binary paths (e.g. `"${pkg}/bin/fuiovim"`). Always resolve executables via `lib.getExe` or `lib.getExe'`:
+### 3. Resolução de Binários via `lib.getExe`
+Nunca use caminhos fixos de binários (como `"${pkg}/bin/fuiovim"`). Sempre utilize `lib.getExe` ou `lib.getExe'`:
 
 ```nix
 program = lib.getExe fuiovimPkg;
 program = lib.getExe' fuiovimPkg "nvim";
 ```
 
-### 4. Tree Formatting via `nixfmt-tree`
-Always configure `pkgs.nixfmt-tree` as the flake `formatter`. Standard `nixfmt` expects input on stdin, whereas `nixfmt-tree` accepts file paths and formats trees properly when invoked via `nix fmt`.
+### 4. Formatação de Árvore com `nixfmt-tree`
+Sempre configure `pkgs.nixfmt-tree` como o `formatter` do flake. O `nixfmt` padrão espera entrada via stdin, enquanto `nixfmt-tree` aceita caminhos de arquivos e formata a árvore do repositório corretamente via `nix fmt`.
 
-### 5. Aggressive Lazy-Loading
-Every plugin that can be lazily loaded must be lazily loaded to preserve instant time-to-active:
-- Defer non-critical UI and presence plugins to `event = "DeferredUIEnter"` (e.g. `cord.nvim`).
-- Defer insert-specific plugins to `event = "InsertEnter"` (e.g. `mini.pairs`, `blink.cmp`).
-- Defer tool-specific plugins to `cmd` or `keys` (e.g. `oil.nvim`, `mini.visits`).
-- Defer filetype-specific plugins to `ft` (e.g. `vimtex`, `render-markdown`).
+### 5. Carregamento Preguiçoso Agressivo (Lazy-Loading)
+Todo plugin passível de adiamento deve ser carregado preguiçosamente para garantir inicialização instantânea:
+- Plugins visuais secundários e de presença: `event = "DeferredUIEnter"` (ex.: `cord.nvim`, `mini.icons`, `nvim-treesitter`).
+- Plugins específicos do modo de inserção: `event = "InsertEnter"` (ex.: `mini.pairs`, `blink.cmp`).
+- Ferramentas e utilitários: disparados por `cmd` ou `keys` (ex.: `oil.nvim`, `mini.visits`, `conform.nvim`).
+- Plugins específicos por tipo de arquivo: `ft` (ex.: `vimtex`, `render-markdown`).
 
-### 6. No Code Duplication Across Lua Modules
-Centralize common helpers and utilities into `lua/fuiovim/util.lua`. Never duplicate runtime inspection, category checking (`cat`), or repetitive logic across plugin specification files.
+### 6. Centralização de Lógica sem Duplicação
+Centralize utilitários e funções auxiliares em `lua/fuiovim/util.lua`. Nunca duplique lógica de verificação de especificações (`has_spec`), inspeção de plugins (`has_plugin`) ou detecções de ambiente.
+
+### 7. Descrições em Português Brasileiro
+Todas as descrições em opções Nix (`description`), mensagens de commit e descrições de atalhos em Lua (`desc`) devem estar redigidas em português brasileiro.
 
 ---
 
-## Git & Workflow Guidelines
+## Diretrizes de Git e Fluxo de Trabalho
 
-### 1. Git Tracking Mandatory for Nix Flakes
-Nix flakes only evaluate files tracked by Git. Always run `git add -A` before running `nix flake check`, evaluating expressions, or testing builds.
+### 1. Rastreamento Obrigatório no Git
+Flakes Nix apenas avaliam arquivos rastreados pelo Git. Sempre execute `git add -A` antes de testar ou avaliar com o Nix.
 
-### 2. Verification Before Committing
-Verify changes using:
+### 2. Verificação Pré-Commit
+Sempre valide as alterações com:
 ```bash
 git add -A
 nix fmt
@@ -74,10 +77,10 @@ nix flake check --no-build
 nix run . -- --headless "+lua print('OK')" +qa
 ```
 
-### 3. Always Commit Cleanly
-Do not leave unstaged or dirty working trees. Use conventional commits:
-- `feat(...)`: New feature or configuration option
-- `fix(...)`: Bug fix or configuration correction
-- `refactor(...)`: Reorganization or cleanup without behavior changes
-- `docs(...)`: Documentation updates (`README.md`, `AGENTS.md`)
-- `style(...)`: Formatting or aesthetic improvements
+### 3. Commits Limpos e Convencionais
+Mantenha o histórico sem arquivos esquecidos ou mensagens vagas:
+- `feat(...)`: Nova funcionalidade ou configuração
+- `fix(...)`: Correção de bug ou ajuste de configuração
+- `refactor(...)`: Reorganização de código sem alteração funcional
+- `docs(...)`: Atualizações de documentação (`README.md`, `AGENTS.md`)
+- `style(...)`: Ajustes estéticos ou formatação

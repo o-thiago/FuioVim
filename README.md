@@ -1,18 +1,16 @@
 # FuioVim
 
-FuioVim é uma configuração de Neovim empacotada de forma declarativa e reproduzível utilizando o [nix-wrapper-modules](https://nix-community.github.io/nix-wrapper-modules/wrapperModules/neovim.html).
+FuioVim é uma configuração de Neovim empacotada de forma declarativa e reproduzível com Nix através do [nix-wrapper-modules](https://nix-community.github.io/nix-wrapper-modules/wrapperModules/neovim.html).
 
-Ao contrário de distribuições tradicionais que dependem de scripts imperativos (`curl | bash`), gerenciadores mutáveis como Mason, ou pacotes globais de npm e pip, todas as dependências do FuioVim — plugins, LSPs, formatadores, linters e gramáticas Tree-sitter — são construídas hermeticamente via Nix.
+Em vez de usar instaladores imperativos (como Mason, scripts shell ou pacotes globais de pip e npm), o FuioVim gerencia plugins, LSPs, formatadores e ferramentas diretamente no ambiente Nix.
 
-Além disso, o projeto adota um modelo modular com opt-in/opt-out (similar ao conceito de categorias do *nixCats*). Usuários downstream podem desativar ou adicionar toolchains com uma linha de configuração no Nix, sem que plugins desnecessários ou ferramentas pesadas permaneçam no sistema ou no `$PATH`.
+O projeto adota uma arquitetura predominantemente **opt-in**: a base do editor é leve e inclui apenas utilitários essenciais. Pilhas pesadas de linguagens específicas são desabilitadas por padrão, permitindo que você habilite somente o que usa.
 
 ---
 
-## Como Usar
+## Execução Rápida (Sem Instalação)
 
-### Execução Imediata (Sem Instalar)
-
-Caso já possua o Nix instalado com suporte a Flakes:
+Com o Nix instalado e suporte a Flakes ativo:
 
 ```bash
 nix run github:o-thiago/FuioVim
@@ -20,43 +18,47 @@ nix run github:o-thiago/FuioVim
 
 ---
 
-## Instalação e Atualização em Distribuições Não-Nix
+## Instalação e Atualização em Distros Não-Nix
 
-O FuioVim pode ser instalado e atualizado em qualquer distribuição Linux (Ubuntu, Debian, Fedora, Arch, etc.) sem interferir com o gerenciador de pacotes do sistema (apt, dnf, pacman).
+Você pode usar o FuioVim em qualquer distribuição Linux (Ubuntu, Debian, Fedora, Arch, etc.) sem alterar os pacotes gerenciados pelo seu sistema operacional.
 
 ### 1. Instalar o Nix
 
-A maneira recomendada é o instalador oficial da Determinate Systems:
+Recomenda-se o instalador da Determinate Systems:
 
 ```bash
 curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install
 ```
 
-Reinicie o terminal após a instalação para carregar as variáveis de ambiente.
+Após a conclusão, reinicie o terminal para que o Nix seja carregado no `$PATH`.
 
 ### 2. Instalar o FuioVim
 
-Instale o binário no perfil do usuário:
+Instale o pacote no perfil do seu usuário:
 
 ```bash
 nix profile install github:o-thiago/FuioVim
 ```
 
-Isso disponibiliza os comandos `fuiovim`, `fvim` e `nvim` no seu `$PATH` (`~/.nix-profile/bin`).
+Isso cria os executáveis `fuiovim`, `fvim` e `nvim` no diretório `~/.nix-profile/bin`.
 
-### 3. Atualizar o FuioVim
+### 3. Atualizar
 
-Para atualizar para a versão mais recente do repositório:
+Para atualizar o FuioVim para a versão mais recente:
 
 ```bash
-# Atualização via perfil
-nix profile upgrade '.*'
-
-# Ou reinstalação forçando atualização do cache
 nix profile install --refresh github:o-thiago/FuioVim
 ```
 
+Ou, se preferir atualizar todos os pacotes do perfil:
+
+```bash
+nix profile upgrade '.*'
+```
+
 ### 4. Desinstalar
+
+Caso deseje remover o FuioVim:
 
 ```bash
 nix profile remove fuiovim
@@ -64,11 +66,11 @@ nix profile remove fuiovim
 
 ---
 
-## Integração em Sistemas com Nix
+## Uso com Flakes e Home Manager
 
-### Home Manager
+O FuioVim expõe módulos prontos para o Home Manager e NixOS, além de permitir estender o wrapper para ativar linguagens ou adicionar plugins próprios.
 
-Adicione o input ao seu `flake.nix`:
+### No Home Manager
 
 ```nix
 {
@@ -77,16 +79,20 @@ Adicione o input ao seu `flake.nix`:
     fuiovim.url = "github:o-thiago/FuioVim";
   };
 
-  outputs = { self, nixpkgs, fuiovim, ... }: {
-    homeConfigurations."usuario" = home-manager.lib.homeManagerConfiguration {
+  outputs = { self, nixpkgs, fuiovim, home-manager, ... }: {
+    homeConfigurations."seu-usuario" = home-manager.lib.homeManagerConfiguration {
       modules = [
         fuiovim.homeManagerModules.default
         {
-          # Ativar e configurar opt-out se desejado
           wrappers.fuiovim = {
             enable = true;
-            specs.tex.enable = false;   # desativa TeX/LaTeX (economiza espaço)
-            specs.php.enable = false;   # desativa stack PHP
+
+            # Ativação das pilhas de linguagem desejadas (opt-in):
+            specs = {
+              rust.enable = true;
+              web.enable = true;
+              python.enable = true;
+            };
           };
         }
       ];
@@ -95,71 +101,93 @@ Adicione o input ao seu `flake.nix`:
 }
 ```
 
-### NixOS
+### Personalização Avançada com `extend`
+
+Você pode estender o módulo base do FuioVim para ajustar configurações ou incluir plugins adicionais:
 
 ```nix
-{
-  environment.systemPackages = [
-    fuiovim.packages.${pkgs.system}.default
-  ];
-}
+let
+  meuFuioVim = fuiovim.wrappers.fuiovim.extend {
+    # Ativa linguagens necessárias
+    specs = {
+      rust.enable = true;
+      c_cpp.enable = true;
+
+      # Adiciona novos plugins
+      meus-plugins = with pkgs.vimPlugins; [
+        vim-fugitive
+      ];
+    };
+  };
+in
+meuFuioVim.wrap { inherit pkgs; }
 ```
 
 ---
 
-## Customização Downstream (Estilo nixCats)
+## Especificações e Pilhas (`specs`)
 
-O FuioVim expõe sua configuração como um `wrapperModule`. É possível estender a base para ligar/desligar toolchains ou incluir plugins adicionais:
+Cada especificação controla simultaneamente a ativação dos plugins no Neovim e a injeção dos respectivos binários (LSPs, formatadores, linters) no `$PATH`.
 
-```nix
-let
-  customFuioVim = fuiovim.wrappers.fuiovim.extend {
-    # Desabilitar stacks indesejadas (remove plugins e LSPs do PATH)
-    specs.tex.enable = false;
-    specs.csharp.enable = false;
-    specs.php.enable = false;
+| Especificação | Padrão | Descrição | Componentes Principais |
+| :--- | :--- | :--- | :--- |
+| `core` | Ativo | Base do editor e UI essencial | `lze`, `rose-pine`, `mini`, `oil`, `snacks`, `cord`, `ripgrep`, `lazygit`, `figlet` |
+| `completion` | Ativo | Autocompletar e snippets | `blink-cmp`, `friendly-snippets` |
+| `treesitter` | Ativo | Realce de sintaxe Tree-sitter | `nvim-treesitter.withAllGrammars` |
+| `lsp` | Ativo | Suporte a Language Server Protocol | `nvim-lspconfig` |
+| `formatting` | Ativo | Formatação de arquivos ao salvar | `conform-nvim` |
+| `linting` | Ativo | Linting assíncrono | `nvim-lint` |
+| `markdown` | Ativo | Renderização visual de Markdown | `render-markdown-nvim` |
+| `lua` | Ativo | Toolchain Lua | `lua-language-server`, `stylua` |
+| `nix` | Ativo | Toolchain Nix | `nixd`, `statix`, `nixfmt` |
+| `rust` | *Opt-in* | Toolchain Rust | `rustaceanvim`, `rust-analyzer`, `clippy`, `rustfmt` |
+| `python` | *Opt-in* | Toolchain Python | `pyright`, `ruff` |
+| `web` | *Opt-in* | JS, TS, HTML, CSS, Svelte, Tailwind | `typescript-language-server`, `tailwindcss`, `biome`, `svelte-language-server` |
+| `c_cpp` | *Opt-in* | C e C++ | `clang-tools`, `cppcheck` |
+| `tex` | *Opt-in* | LaTeX e TeX | `vimtex`, `texliveFull`, `texlab`, `zathura` |
+| `csharp` | *Opt-in* | C# e .NET | `omnisharp-roslyn`, `csharpier` |
+| `php` | *Opt-in* | PHP | `intelephense`, `phpactor`, `phpstan`, `php-cs-fixer` |
+| `bash` | *Opt-in* | Scripts Shell / Bash | `bash-language-server`, `shfmt`, `shellcheck` |
+| `yaml` | *Opt-in* | Arquivos YAML | `yaml-language-server`, `yamllint` |
 
-    # Adicionar plugins próprios
-    specs.meus-plugins = with pkgs.vimPlugins; [
-      vim-fugitive
-    ];
-  };
-in
-customFuioVim.wrap { inherit pkgs; }
-```
+---
 
-### Categorias Disponíveis
+## Atalhos Principais
 
-| Categoria | Descrição | Componentes |
+| Atalho | Modo | Ação |
 | :--- | :--- | :--- |
-| `core` | Base do editor | `lze`, `rose-pine`, `mini`, `oil`, `snacks`, `cord`, `ripgrep`, `lazygit`, `figlet` |
-| `completion` | Autocompletion | `blink-cmp`, `friendly-snippets` |
-| `treesitter` | Realce sintático | `nvim-treesitter.withAllGrammars` |
-| `lsp` | LSP nativo | `nvim-lspconfig` |
-| `formatting` | Formatação | `conform-nvim` |
-| `linting` | Linting assíncrono | `nvim-lint` |
-| `markdown` | Markdown visual | `render-markdown-nvim` |
-| `nix` | Toolchain Nix | `nixd`, `statix`, `nixfmt` |
-| `rust` | Toolchain Rust | `rustaceanvim`, `rust-analyzer`, `clippy`, `rustfmt` |
-| `python` | Toolchain Python | `pyright`, `ruff` |
-| `web` | JS/TS/HTML/CSS | `typescript-language-server`, `svelte-language-server`, `tailwindcss`, `biome` |
-| `c_cpp` | C e C++ | `clang-tools`, `cppcheck` |
-| `tex` | LaTeX | `vimtex`, `texliveFull`, `texlab`, `zathura` |
-| `csharp` | C# (.NET) | `omnisharp-roslyn`, `csharpier` |
-| `php` | PHP | `intelephense`, `phpactor`, `phpstan`, `php-cs-fixer` |
-| `bash` | Shell script | `bash-language-server`, `shfmt`, `shellcheck` |
-| `yaml` | YAML | `yaml-language-server`, `yamllint` |
+| `<Space>` | Normal | Tecla líder (`<leader>`) |
+| `<leader>pv` | Normal | Abrir o gerenciador de arquivos (`Oil.nvim`) |
+| `<leader>pf` | Normal | Localizar arquivos no projeto (`Snacks.picker.files`) |
+| `<leader>ps` | Normal | Buscar texto no projeto (`Snacks.picker.grep`) |
+| `<leader>pw` | Normal | Buscar palavra sob o cursor (`Snacks.picker.grep_word`) |
+| `<leader>lg` | Normal | Abrir terminal com LazyGit flutuante |
+| `<leader>f` | Normal | Formatar buffer atual (`conform.nvim`) |
+| `<leader>y` / `<leader>p` | Normal/Visual | Copiar / Colar na área de transferência do sistema |
+| `J` / `K` | Visual | Mover linhas selecionadas para baixo / cima |
+| `<leader>gd` | Normal | Ir para a definição do símbolo (LSP) |
+| `<leader>ca` | Normal | Ações de código (LSP / RustLsp) |
+| `<leader>rn` | Normal | Renomear símbolo (LSP) |
+| `<leader>vd` | Normal | Exibir diagnósticos flutuantes (LSP) |
+| `<leader>a` | Normal | Adicionar caminho atual às visitas (`mini.visits`) |
+| `<leader>h` | Normal | Selecionar caminho visitado (`mini.visits`) |
+| `<leader>1` – `<leader>5` | Normal | Abrir caminho visitado pelo índice correspondente |
 
 ---
 
 ## Desenvolvimento Local
 
+Para clonar e testar modificações no projeto:
+
 ```bash
-# Entrar no ambiente de desenvolvimento com formatadores e LSPs
+# Entrar no shell com ferramentas de desenvolvimento (formatadores, LSPs)
 nix develop
 
-# Formatar o repositório via nixfmt-tree
+# Formatar os arquivos Nix do repositório
 nix fmt
+
+# Verificar integridade das definições do flake
+nix flake check --no-build
 
 # Testar execução local
 nix run .
@@ -167,29 +195,6 @@ nix run .
 
 ---
 
-## Atalhos Principais
-
-| Atalho | Ação |
-| :--- | :--- |
-| `<Space>` | Tecla Líder (`<leader>`) |
-| `<leader>pv` | Abrir explorador de arquivos (`Oil.nvim`) |
-| `<leader>pf` | Localizar arquivos (`Snacks.picker.files`) |
-| `<leader>ps` | Buscar texto no projeto (`Snacks.picker.grep`) |
-| `<leader>pw` | Buscar palavra sob o cursor (`Snacks.picker.grep_word`) |
-| `<leader>lg` | Abrir LazyGit flutuante |
-| `<leader>f` | Formatar buffer atual (`conform.nvim`) |
-| `<leader>y` / `<leader>p` | Copiar / Colar na área de transferência do sistema |
-| `J` / `K` (Visual) | Mover linhas selecionadas para cima / baixo |
-| `<leader>gd` | Ir para definição de código (LSP) |
-| `<leader>ca` | Ações de código / Code Actions (LSP) |
-| `<leader>rn` | Renomear símbolo (LSP) |
-| `<leader>vd` | Diagnósticos flutuantes (LSP) |
-| `<leader>a` | Adicionar caminho às visitas (`mini.visits`) |
-| `<leader>h` | Selecionar caminho visitado (`mini.visits`) |
-| `<leader>1-5` | Abrir caminho visitado por índice |
-
----
-
 ## Licença
 
-MIT
+Distribuído sob a licença MIT.

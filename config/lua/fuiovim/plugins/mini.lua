@@ -4,27 +4,27 @@ local visit_keys = {
 		function()
 			require("mini.visits").add_path()
 		end,
-		desc = "Add visit path",
+		desc = "Adicionar caminho às visitas",
 	},
 	{
 		"<leader>h",
 		function()
 			require("mini.visits").select_path()
 		end,
-		desc = "Select visit path",
+		desc = "Selecionar caminho visitado",
 	},
 }
 
 for i = 1, 5, 1 do
 	table.insert(visit_keys, {
-		"<leader>" .. i .. ">",
+		"<leader>" .. i,
 		function()
 			local paths = require("mini.visits").list_paths()
 			if paths[i] then
 				vim.cmd("edit " .. paths[i])
 			end
 		end,
-		desc = "Visit path " .. i,
+		desc = "Abrir caminho visitado " .. i,
 	})
 end
 

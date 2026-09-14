@@ -5,7 +5,7 @@ return {
 		{
 			"<Leader>pv",
 			"<CMD>Oil<CR>",
-			desc = "Open Oil file manager",
+			desc = "Abrir gerenciador de arquivos Oil",
 		},
 	},
 	after = function()

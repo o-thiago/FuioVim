@@ -1,4 +1,4 @@
-local cat = require("fuiovim.util").cat
+local has_spec = require("fuiovim.util").has_spec
 
 return {
 	"conform.nvim",
@@ -10,18 +10,19 @@ return {
 			function()
 				require("conform").format({ async = true, lsp_fallback = true })
 			end,
+			desc = "Formatar buffer atual",
 		},
 	},
 	after = function()
 		local formatters = {}
-		if cat("nix") then
+		if has_spec("nix") then
 			formatters.nix = { "nixfmt" }
 		end
-		if cat("c_cpp") then
+		if has_spec("c_cpp") then
 			formatters.c = { "clang_format" }
 			formatters.cpp = { "clang_format" }
 		end
-		if cat("web") then
+		if has_spec("web") then
 			formatters.javascript = { "biome", "biome-organize-imports" }
 			formatters.javascriptreact = { "biome", "biome-organize-imports" }
 			formatters.typescript = { "biome", "biome-organize-imports" }
@@ -31,28 +32,28 @@ return {
 			formatters.css = { "biome" }
 			formatters.json = { "biome" }
 		end
-		if cat("lua") then
+		if has_spec("lua") then
 			formatters.lua = { "stylua" }
 		end
-		if cat("php") then
+		if has_spec("php") then
 			formatters.php = { "pint", "php_cs_fixer", stop_after_first = true }
 		end
-		if cat("markdown") then
+		if has_spec("markdown") then
 			formatters.markdown = { "biome" }
 		end
-		if cat("rust") then
+		if has_spec("rust") then
 			formatters.rust = { "rustfmt" }
 		end
-		if cat("python") then
+		if has_spec("python") then
 			formatters.python = { "ruff_format", "ruff_organize_imports" }
 		end
-		if cat("yaml") then
+		if has_spec("yaml") then
 			formatters.yaml = { "biome" }
 		end
-		if cat("csharp") then
+		if has_spec("csharp") then
 			formatters.cs = { "csharpier" }
 		end
-		if cat("bash") then
+		if has_spec("bash") then
 			formatters.sh = { "shfmt" }
 			formatters.bash = { "shfmt" }
 		end

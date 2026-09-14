@@ -10,7 +10,7 @@ return {
 		after = function()
 			vim.keymap.set("i", "<C-Space>", function()
 				require("blink.cmp").show()
-			end, { silent = true })
+			end, { silent = true, desc = "Exibir autocompletar (Blink)" })
 
 			require("blink.cmp").setup({
 				keymap = {

@@ -1,4 +1,4 @@
-local cat = require("fuiovim.util").cat
+local has_spec = require("fuiovim.util").has_spec
 
 vim.g.mapleader = " "
 vim.cmd("runtime lua/fuiovim/set.vim")
@@ -6,11 +6,11 @@ vim.cmd("runtime lua/fuiovim/set.vim")
 local lze = require("lze")
 lze.load("fuiovim.plugins")
 
-if cat("core") then
+if has_spec("core") then
 	pcall(vim.cmd, "colorscheme rose-pine")
 end
 
-if cat("rust") then
+if has_spec("rust") then
 	vim.g.rustaceanvim = {
 		server = {
 			on_attach = function(_, bufnr)
