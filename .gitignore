@@ -1,0 +1,21 @@
+# Nix build artifacts
+result
+result-*
+
+# Direnv & development environments
+.direnv/
+.envrc.cache
+
+# Editor swap and temp files
+*.swp
+*.swo
+*~
+.netrwhist
+
+# Local cache and state
+.cache/
+.local/
+
+# Tag files
+tags
+TAGS
