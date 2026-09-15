@@ -24,6 +24,10 @@
     let
       module = nixpkgs.lib.modules.importApply ./module.nix inputs;
       wrapper = wrappers.lib.evalModule module;
+      installModule = wrappers.lib.getInstallModule {
+        name = "fuiovim";
+        value = module;
+      };
     in
     flake-parts.lib.mkFlake { inherit inputs; } {
       systems = import systems;
@@ -40,6 +44,7 @@
             config.allowUnfree = true;
           };
           fuiovim-pkg = self.wrappers.fuiovim.wrap { pkgs = pkgsUnfree; };
+          setup-home-manager-pkg = pkgs.callPackage ./scripts/setup-home-manager.nix { inherit system; };
         in
         {
           formatter = pkgs.nixfmt-tree;
@@ -47,6 +52,8 @@
           packages = {
             default = fuiovim-pkg;
             fuiovim = fuiovim-pkg;
+            install-home-manager = setup-home-manager-pkg;
+            setup-home-manager = setup-home-manager-pkg;
           };
 
           apps = {
@@ -65,6 +72,14 @@
             fvim = {
               type = "app";
               program = lib.getExe' fuiovim-pkg "fvim";
+            };
+            install-home-manager = {
+              type = "app";
+              program = lib.getExe setup-home-manager-pkg;
+            };
+            setup-home-manager = {
+              type = "app";
+              program = lib.getExe setup-home-manager-pkg;
             };
           };
 
@@ -101,15 +116,12 @@
 
         nixosModules = {
           default = self.nixosModules.fuiovim;
-          fuiovim = wrappers.lib.getInstallModule {
-            name = "fuiovim";
-            value = module;
-          };
+          fuiovim = installModule;
         };
 
         homeModules = {
           default = self.homeModules.fuiovim;
-          fuiovim = self.nixosModules.fuiovim;
+          fuiovim = installModule;
         };
 
         homeManagerModules = {

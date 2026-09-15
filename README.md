@@ -18,110 +18,256 @@ nix run github:o-thiago/FuioVim
 
 ---
 
-## Instalação e Atualização em Distros Não-Nix
+## Instalação e Personalização com Home Manager (Recomendado)
 
-Você pode usar o FuioVim em qualquer distribuição Linux (Ubuntu, Debian, Fedora, Arch, etc.) sem alterar os pacotes gerenciados pelo seu sistema operacional.
+Em distribuições não-NixOS (Ubuntu, Debian, Fedora, Arch, etc.), o **Home Manager** em modo *standalone* é a forma recomendada de instalar e personalizar o FuioVim de forma declarativa e reproduzível. Ele permite ativar toolchains adicionais (`specs`), configurar formatadores e gerenciar os binários sem interferir com os pacotes do sistema operacional.
 
-### 1. Instalar o Nix
+### 1. Instalar o Nix e Habilitar Flakes
 
-Utilize o instalador oficial multi-usuário do Nix:
+Se ainda não possui o Nix instalado:
 
 ```bash
+# Instalador oficial multi-usuário (daemon):
 sh <(curl -L https://nixos.org/nix/install) --daemon
 ```
 
-Habilite o suporte a Flakes adicionando as flags experimentais em `~/.config/nix/nix.conf`:
+Habilite o suporte experimental a Flakes e novos comandos:
 
 ```bash
 mkdir -p ~/.config/nix
 echo "experimental-features = nix-command flakes" >> ~/.config/nix/nix.conf
 ```
 
-Reinicie o terminal (ou encerre e inicie a sessão) para carregar o Nix no `$PATH`.
+> [!TIP]
+> Reinicie o terminal ou encerre a sessão atual para que o Nix seja carregado no seu `$PATH`.
 
-### 2. Instalar o FuioVim
+---
 
-Instale o pacote no perfil do seu usuário:
+### 2. Configurar o Home Manager Standalone
 
+Você pode configurar o Home Manager automaticamente através do instalador do FuioVim ou seguir o passo a passo manual.
+
+#### Opção A: Configuração Automática via Script (Recomendado)
+
+Execute o instalador oficial:
+
+```bash
+nix run github:o-thiago/FuioVim#setup-home-manager
+```
+
+Esse script realiza automaticamente:
+- A detecção do seu usuário (`whoami`), diretório `$HOME`, arquitetura (`system`) e versão de estado do NixOS (`stateVersion`).
+- A criação de `~/.config/home-manager/flake.nix` e `home.nix` já formatados com as opções e especificações do FuioVim.
+- A inicialização do repositório Git local em `~/.config/home-manager/`.
+- A compilação e ativação inicial do ambiente via `home-manager switch`.
+
+> [!TIP]
+> Para automações ou execução sem confirmação interativa, utilize a flag `-y`:
+> ```bash
+> nix run github:o-thiago/FuioVim#setup-home-manager -- --yes
+> ```
+
+---
+
+#### Opção B: Configuração Manual Passo a Passo
+
+Caso prefira criar os arquivos manualmente, crie o diretório:
+
+```bash
+mkdir -p ~/.config/home-manager
+```
+
+#### Arquivo `~/.config/home-manager/flake.nix`
+
+Crie o arquivo `~/.config/home-manager/flake.nix` substituindo `"seu-usuario"` pelo nome do seu usuário Linux (descubra com `whoami`):
+
+```nix
+{
+  description = "Configuração do Home Manager com FuioVim";
+
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    home-manager = {
+      url = "github:nix-community/home-manager";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    fuiovim = {
+      url = "github:o-thiago/FuioVim";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+  };
+
+  outputs =
+    {
+      nixpkgs,
+      home-manager,
+      fuiovim,
+      ...
+    }:
+    let
+      system = "x86_64-linux"; # Altere para "aarch64-linux" se estiver em ARM
+      pkgs = nixpkgs.legacyPackages.${system};
+    in
+    {
+      homeConfigurations."seu-usuario" = home-manager.lib.homeManagerConfiguration {
+        inherit pkgs;
+        modules = [
+          ./home.nix
+          fuiovim.homeManagerModules.default
+        ];
+      };
+    };
+}
+```
+
+#### Arquivo `~/.config/home-manager/home.nix`
+
+Crie o arquivo `~/.config/home-manager/home.nix` ajustando `home.username` e `home.homeDirectory`:
+
+```nix
+{ pkgs, ... }:
+{
+  programs.home-manager.enable = true;
+
+  home = {
+    username = "seu-usuario";
+    homeDirectory = "/home/seu-usuario";
+    stateVersion = "26.11";
+  };
+
+  wrappers.fuiovim = {
+    enable = true;
+
+    # Ativação das pilhas de linguagem desejadas (opt-in):
+    specs = {
+      rust = { ... }: { enable = true; };
+      python = { ... }: { enable = true; };
+      web = { ... }: { enable = true; };
+      c_cpp = { ... }: { enable = true; };
+    };
+  };
+}
+```
+
+---
+
+### 3. Aplicar a Configuração
+
+Na primeira vez, aplique a configuração diretamente via `nix run`:
+
+```bash
+nix run home-manager -- switch --flake ~/.config/home-manager#seu-usuario
+```
+
+Após a primeira aplicação, o executável `home-manager` estará disponível no seu `$PATH`. Para aplicar futuras modificações:
+
+```bash
+home-manager switch --flake ~/.config/home-manager#seu-usuario
+```
+
+Os executáveis `fuiovim`, `fvim` e `nvim` estarão prontos para uso com todas as linguagens e LSPs selecionados instalados de maneira hermética.
+
+---
+
+### 4. Atualizar o FuioVim no Home Manager
+
+Para atualizar o FuioVim para a versão mais recente da branch `main`:
+
+```bash
+cd ~/.config/home-manager
+nix flake lock --update-input fuiovim
+home-manager switch --flake .#seu-usuario
+```
+
+---
+
+## Instalação Rápida via `nix profile` (Sem Customização)
+
+Se você deseja apenas instalar o FuioVim com a configuração padrão (sem ativar toolchains opt-in como Rust, Python, etc.) e sem configurar o Home Manager:
+
+### Instalar
 ```bash
 nix profile install github:o-thiago/FuioVim
 ```
 
-Isso cria os executáveis `fuiovim`, `fvim` e `nvim` no diretório `~/.nix-profile/bin`.
-
-### 3. Atualizar
-
-Para atualizar o FuioVim para a versão mais recente:
-
+### Atualizar
 ```bash
 nix profile install --refresh github:o-thiago/FuioVim
 ```
 
-Ou, se preferir atualizar todos os pacotes do perfil:
-
-```bash
-nix profile upgrade '.*'
-```
-
-### 4. Desinstalar
-
-Caso deseje remover o FuioVim:
-
+### Desinstalar
 ```bash
 nix profile remove fuiovim
 ```
 
 ---
 
-## Uso com Flakes e Home Manager
+## Integração em Dotfiles Existentes (NixOS & Home Manager)
 
-O FuioVim expõe módulos prontos para o Home Manager e NixOS, além de permitir estender o wrapper para ativar linguagens ou adicionar plugins próprios.
+Caso você já possua um flake gerenciando seu sistema ou dotfiles:
 
-### No Home Manager
+### Módulo do Home Manager
+Adicione o FuioVim aos inputs e importe o módulo:
 
 ```nix
 {
-  inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    fuiovim.url = "github:o-thiago/FuioVim";
-  };
+  inputs.fuiovim.url = "github:o-thiago/FuioVim";
 
-  outputs = { self, nixpkgs, fuiovim, home-manager, ... }: {
-    homeConfigurations."seu-usuario" = home-manager.lib.homeManagerConfiguration {
-      modules = [
-        fuiovim.homeManagerModules.default
-        {
-          wrappers.fuiovim = {
-            enable = true;
+  # Na lista de modules do homeManagerConfiguration:
+  modules = [
+    fuiovim.homeManagerModules.default
+    {
+      wrappers.fuiovim = {
+        enable = true;
 
-            # Ativação das pilhas de linguagem desejadas (opt-in):
-            specs = {
-              rust.enable = true;
-              web.enable = true;
-              python.enable = true;
-            };
-          };
-        }
-      ];
-    };
-  };
+        specs = {
+          rust = { ... }: { enable = true; };
+          # ...
+        };
+      };
+    }
+  ];
 }
 ```
 
-### Personalização Avançada com `extend`
+### Módulo do NixOS
+Para instalar para todos os usuários do sistema em NixOS:
 
-Você pode estender o módulo base do FuioVim para ajustar configurações ou incluir plugins adicionais:
+```nix
+{
+  inputs.fuiovim.url = "github:o-thiago/FuioVim";
+
+  # Na lista de modules do nixosSystem:
+  modules = [
+    fuiovim.nixosModules.default
+    {
+      wrappers.fuiovim = {
+        enable = true;
+
+        specs = {
+          rust = { ... }: { enable = true; };
+          # ...
+        };
+      };
+    }
+  ];
+}
+```
+
+---
+
+## Personalização Avançada com `extend`
+
+Você pode estender o módulo base do FuioVim em expressões Nix para ajustar opções ou adicionar plugins e pacotes adicionais:
 
 ```nix
 let
   meuFuioVim = fuiovim.wrappers.fuiovim.extend {
-    # Ativa linguagens necessárias
     specs = {
-      rust.enable = true;
-      c_cpp.enable = true;
+      rust = { ... }: { enable = true; };
 
-      # Adiciona novos plugins
-      meus-plugins = with pkgs.vimPlugins; [
+      # Adiciona plugins extras via spec customizada:
+      meus-plugins.data = with pkgs.vimPlugins; [
         vim-fugitive
       ];
     };
